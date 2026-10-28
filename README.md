@@ -26,6 +26,15 @@ Your API key is never uploaded. It is typed into the app and stays on your phone
 2. Tap the **⋮ menu → Add to Home screen → Install**.
 3. Open Habla from your home screen, tap ⚙, paste your key, press **Load list**, pick a model with "flash" in its name, then press **Test connection** and **Save**.
 
+## What's inside
+
+- **Chat:** role-play scenarios (café, travel, small talk, team meeting, presentation, client call, job interview, IELTS/DELE-style speaking exam). Every message gets grammar corrections plus a **"Sounds more natural"** rewrite.
+- **Voice chat:** switch it on and the tutor reads each reply aloud, then listens; your answer is sent when you stop talking. If your phone doesn't start listening by itself, tap 🎙.
+- **Speak tab (pronunciation drills):** listen, listen slowly, then say the sentence. Use the built-in starter set (works offline, no key needed), sentences you saved from chat (🎯 buttons), or an AI-generated set for a sound you want to work on.
+- **Tutor voice and speed:** pick from the voices installed on your phone in Settings ⚙.
+
+**About the pronunciation score:** it's the share of the sentence's words your phone's speech recognizer understood. It tells you whether you were understood, not how close your accent is to a native speaker's, and recognizers are forgiving, so treat 90%+ as "clear", not "perfect". Real sound-by-sound scoring (like paid apps use) needs a paid speech-assessment service.
+
 ## Notes
 
 - The app opens offline, but the tutor needs internet to reply. Speech recognition in Chrome also needs internet.
