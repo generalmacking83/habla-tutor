@@ -292,7 +292,7 @@ function speakThenListen(text){
 $("startBtn").onclick = () => {
   startMsg("");
   if(!data.cfg.key){ $("keyNote").hidden=false; openSettings(); return; }
-  if(data.cfg.provider==="gemini" && !data.cfg.gemModel){ startMsg("Pick a model first: open Settings ⚙, press <b>Load list</b>, choose a “flash” model, then Save."); openSettings(); return; }
+  if(data.cfg.provider==="gemini" && !data.cfg.gemModel){ openSettings(); return; }
   convo = {lang, level:$("level").value, scenario:$("scenario").value, explain:$("explain").value, strict:$("strict").value, spoken:data.voiceMode, history:[], view:[]};
   $("reviewCard").hidden = true;
   renderChat(); alertMsg("");
@@ -689,11 +689,14 @@ function openSettings(){
   $("rate").value = c.rate||1; $("rateOut").textContent = (+$("rate").value).toFixed(1)+"×";
   const sel = $("gemModel"); if(c.gemModel && ![...sel.options].some(o=>o.value===c.gemModel)) sel.innerHTML = `<option value="${esc(c.gemModel)}">${esc(c.gemModel)}</option>` + sel.innerHTML;
   sel.value = c.gemModel || "";
-  if(!sel.options.length) sel.innerHTML = `<option value="">Press Load list →</option>`;
+  if(!sel.options.length || !sel.value) sel.innerHTML = `<option value="">(no model yet)</option>` + [...sel.options].filter(o=>o.value).map(o=>o.outerHTML).join("");
+  sel.value = c.gemModel || sel.value;
+  modelMsg("");
   $("voice_es").value = ""; $("voice_en").value = "";
   fillVoices();
   syncProviderFields(); setMsg("");
   if(typeof dlg.showModal==="function") dlg.showModal(); else dlg.setAttribute("open","");
+  if(c.provider==="gemini" && c.key && !c.gemModel) loadModelList();
 }
 function setMsg(m, k){ const a=$("setMsg"); if(!m){a.hidden=true;return;} a.hidden=false; a.className="alert"+(k?" "+k:""); a.textContent=m; }
 function readForm(){ return {provider:$("provider").value, key:$("apiKey").value.trim(), gemModel:$("gemModel").value, baseUrl:$("baseUrl").value.trim(), oaModel:$("oaModel").value.trim(), dialect:$("dialect").value,
@@ -709,25 +712,51 @@ dlg.addEventListener("click", e => {
   speak(L==="es" ? "Hola, soy tu tutor. ¿Practicamos un poco?" : "Hi, I'm your tutor. Shall we practise a little?", L);
   data.cfg = prev;
 });
-$("loadModels").onclick = async () => {
-  const key = $("apiKey").value.trim(); if(!key){ setMsg("Paste your API key first.","err"); return; }
-  setMsg("Loading models…");
+async function fetchModels(key){
+  let r;
+  try{ r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {headers:{"x-goog-api-key":key}}); }
+  catch(_){ throw new Error("Couldn't reach Google. Check your internet connection."); }
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(apiError(r.status, j.error && j.error.message));
+  const ms = (j.models||[]).filter(m => (m.supportedGenerationMethods||[]).includes("generateContent"))
+    .map(m=>m.name.replace(/^models\//,""))
+    .filter(n => /gemini/i.test(n) && !/(tts|live|image|embedding|transcribe|translate|audio)/i.test(n));
+  // stable flash models first (free-tier friendly), lite next, others last; previews after stable ones
+  const rank = n => (/flash/.test(n)&&!/lite/.test(n) ? 0 : /flash-lite/.test(n) ? 1 : 2) + (/(preview|exp)/.test(n) ? 3 : 0);
+  ms.sort((a,b)=> rank(a)-rank(b) || b.localeCompare(a,undefined,{numeric:true}));
+  if(!ms.length) throw new Error("No chat models were found for this key.");
+  return ms;
+}
+function modelMsg(m, k){ const a=$("modelMsg"); if(!m){a.hidden=true;return;} a.hidden=false; a.className="alert"+(k?" "+k:""); a.textContent=m; }
+let loadingModels = null;
+function loadModelList(){
+  // one load at a time; callers that arrive mid-load wait for the same result
+  if(!loadingModels) loadingModels = doLoadModels().finally(() => { loadingModels = null; });
+  return loadingModels;
+}
+async function doLoadModels(){
+  const key = $("apiKey").value.trim();
+  if(!key){ modelMsg("Paste your API key above first.","err"); return; }
+  $("loadModels").disabled = true; $("loadModels").textContent = "Loading…"; modelMsg("Loading models…");
   try{
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {headers:{"x-goog-api-key":key}});
-    const j = await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(apiError(r.status, j.error && j.error.message));
-    const ms = (j.models||[]).filter(m => (m.supportedGenerationMethods||[]).includes("generateContent"))
-      .map(m=>m.name.replace(/^models\//,""))
-      .filter(n => /gemini/i.test(n) && !/(tts|live|image|embedding|transcribe|translate|audio)/i.test(n));
-    // flash models first (cheapest, free-tier friendly), lite last
-    ms.sort((a,b)=>{ const s=n=>(/flash/.test(n)&&!/lite/.test(n)?0:/flash-lite/.test(n)?1:2); return s(a)-s(b) || b.localeCompare(a,undefined,{numeric:true}); });
-    if(!ms.length) throw new Error("No chat models were found for this key.");
+    const ms = await fetchModels(key);
     const cur = $("gemModel").value;
     $("gemModel").innerHTML = ms.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
     $("gemModel").value = ms.includes(cur) ? cur : ms[0];
-    setMsg(`Found ${ms.length} models. A "flash" model is the usual free-tier choice.`, "ok");
-  }catch(e){ setMsg(e.message, "err"); }
-};
+    modelMsg(`Found ${ms.length} models and picked ${$("gemModel").value}. Press Save at the bottom.`, "ok");
+  }catch(e){ modelMsg(e.message, "err"); }
+  finally{ $("loadModels").disabled = false; $("loadModels").textContent = "Load list"; }
+}
+$("loadModels").onclick = loadModelList;
+// load automatically once a key is pasted
+let keyTimer = 0, lastLoadedKey = "";
+$("apiKey").addEventListener("input", () => {
+  clearTimeout(keyTimer);
+  keyTimer = setTimeout(() => {
+    const k = $("apiKey").value.trim();
+    if($("provider").value==="gemini" && k.length >= 20 && k !== lastLoadedKey){ lastLoadedKey = k; loadModelList(); }
+  }, 500);
+});
 $("testBtn").onclick = async () => {
   const prev = data.cfg; data.cfg = readForm();
   setMsg("Testing…");
@@ -737,7 +766,13 @@ $("testBtn").onclick = async () => {
   }catch(e){ setMsg(e.message, "err"); }
   finally{ data.cfg = prev; }
 };
-$("saveBtn").onclick = () => { data.cfg = readForm(); save(); dlg.close(); renderChat(); };
+$("saveBtn").onclick = async () => {
+  if($("provider").value==="gemini" && $("apiKey").value.trim() && !$("gemModel").value){
+    await loadModelList();
+    if(!$("gemModel").value){ setMsg("Not saved yet: no model could be loaded. See the message under Model.", "err"); $("modelMsg").scrollIntoView({block:"center"}); return; }
+  }
+  data.cfg = readForm(); save(); dlg.close(); startMsg(""); renderChat();
+};
 
 // ---------- setup ----------
 $("scenario").value = "cafe";

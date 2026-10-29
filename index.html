@@ -276,6 +276,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <p class="small">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. On Google's free tier, your messages may be used to improve Google's products.</p>
       <div class="field"><label class="label" for="gemModel">Model</label>
         <div style="display:flex;gap:8px"><select id="gemModel" style="flex:1;min-width:0"></select><button class="btn" id="loadModels">Load list</button></div></div>
+      <div class="alert" id="modelMsg" hidden></div>
     </div>
     <div id="oaFields" class="stack" hidden>
       <p class="small">For Groq, get a key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> and keep the base URL below.</p>
@@ -299,8 +300,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 
-<script src="score.js?v=3"></script>
+<script src="score.js?v=4"></script>
 <script>window.addEventListener("error",function(e){var d=document.getElementById("startMsg");if(d&&e.message){d.hidden=false;d.textContent="App error: "+e.message+". Reload the page; if it keeps happening, send this message to whoever maintains the app.";}});</script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
