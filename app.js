@@ -237,8 +237,10 @@ function setControls(){
   $("sendBtn").disabled = busy; $("hintBtn").disabled = busy;
   $("reviewBtn").disabled = busy || !convo || convo.view.filter(v=>v.type==="u").length<3;
   $("startBtn").disabled = busy;
+  $("startBtn").textContent = busy && convo && !convo.view.length ? "Starting…" : "Start conversation";
 }
 function alertMsg(msg, kind){ const a=$("alert"); if(!msg){a.hidden=true;return;} a.hidden=false; a.className="alert"+(kind?" "+kind:""); a.innerHTML=msg; }
+function startMsg(msg){ const a=$("startMsg"); if(!msg){a.hidden=true;return;} a.hidden=false; a.innerHTML=msg; a.scrollIntoView && a.scrollIntoView({block:"nearest"}); }
 
 // ---------- conversation flow ----------
 async function turn(userText){
@@ -250,6 +252,7 @@ async function turn(userText){
   if(!isStart){ uv = {type:"u", text:userText, pending:"Checking…"}; convo.view.push(uv); }
   renderThread(); setControls();
   ctl = new AbortController();
+  const myCtl = ctl, timer = setTimeout(() => { myCtl.timedOut = true; myCtl.abort(); }, 60000);
   try{
     let hist = convo.history.slice(-24); while(hist.length && hist[0].role!=="user") hist.shift();
     const r = await callAI(rules(convo), hist, {signal: ctl.signal});
@@ -266,9 +269,11 @@ async function turn(userText){
   }catch(e){
     convo.history.pop();
     if(uv){ convo.view.pop(); $("input").value = userText; }
-    if(e.name!=="AbortError") alertMsg(esc(e.message || "Something went wrong. Try again."), "err");
-    if(isStart && !convo.view.length){ convo = null; }
+    const m = e.name==="AbortError" ? (ctl && ctl.timedOut ? "The AI took too long to answer. Check your internet and try again." : "") : (e.message || "Something went wrong. Try again.");
+    if(isStart && !convo.view.length){ convo = null; if(m) startMsg("Couldn't start: "+esc(m)); }
+    else if(m) alertMsg(esc(m), "err");
   }finally{
+    clearTimeout(timer);
     busy = false; ctl = null; data.convo = convo; save();
     if(convo) renderThread(); else renderChat();
     setControls(); renderSide();
@@ -285,7 +290,9 @@ function speakThenListen(text){
 }
 
 $("startBtn").onclick = () => {
+  startMsg("");
   if(!data.cfg.key){ $("keyNote").hidden=false; openSettings(); return; }
+  if(data.cfg.provider==="gemini" && !data.cfg.gemModel){ startMsg("Pick a model first: open Settings ⚙, press <b>Load list</b>, choose a “flash” model, then Save."); openSettings(); return; }
   convo = {lang, level:$("level").value, scenario:$("scenario").value, explain:$("explain").value, strict:$("strict").value, spoken:data.voiceMode, history:[], view:[]};
   $("reviewCard").hidden = true;
   renderChat(); alertMsg("");

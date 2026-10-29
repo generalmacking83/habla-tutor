@@ -185,6 +185,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <select id="strict"><option value="major">Important errors only</option><option value="all">Every error (incl. accents)</option></select></div>
       <label class="check"><input type="checkbox" id="voiceSetup"><span><b>Voice chat</b>: the tutor talks, then listens, and sends your answer when you stop speaking.</span></label>
       <button class="btn primary" id="startBtn">Start conversation</button>
+      <div class="alert err" id="startMsg" hidden></div>
       <div class="alert" id="keyNote" hidden>Add your free API key in <b>Settings ⚙</b> first.</div>
     </div>
     <div id="convo" hidden>
@@ -298,7 +299,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 
-<script src="score.js"></script>
-<script src="app.js"></script>
+<script src="score.js?v=3"></script>
+<script>window.addEventListener("error",function(e){var d=document.getElementById("startMsg");if(d&&e.message){d.hidden=false;d.textContent="App error: "+e.message+". Reload the page; if it keeps happening, send this message to whoever maintains the app.";}});</script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
