@@ -119,6 +119,7 @@ textarea{flex:1;min-width:0;min-height:46px;max-height:140px;resize:none;border:
 .review ul{margin:0;padding-left:18px;display:grid;gap:6px}
 .stack{display:grid;gap:14px}
 
+#apiKey.masked{-webkit-text-security:disc;text-security:disc}
 /* voice chat */
 .vbtn{border:1px solid var(--line);background:var(--sunk);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;white-space:nowrap}
 .vbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
@@ -271,7 +272,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <option value="openai">Groq or other OpenAI-compatible</option>
       </select></div>
     <div class="field"><label class="label" for="apiKey">API key</label>
-      <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key"></div>
+      <div style="display:flex;gap:8px">
+        <input id="apiKey" class="masked" type="text" inputmode="text" name="gemini-api-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore placeholder="Paste your key" style="flex:1;min-width:0">
+        <button class="btn" id="pasteKey" type="button">Paste</button>
+        <button class="btn" id="showKey" type="button" aria-pressed="false">Show</button>
+      </div></div>
     <div id="gemFields" class="stack">
       <p class="small">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. On Google's free tier, your messages may be used to improve Google's products.</p>
       <div class="field"><label class="label" for="gemModel">Model</label>
@@ -300,8 +305,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 
-<script src="score.js?v=4"></script>
+<script src="score.js?v=5"></script>
 <script>window.addEventListener("error",function(e){var d=document.getElementById("startMsg");if(d&&e.message){d.hidden=false;d.textContent="App error: "+e.message+". Reload the page; if it keeps happening, send this message to whoever maintains the app.";}});</script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

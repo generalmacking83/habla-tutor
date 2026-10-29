@@ -699,7 +699,7 @@ function openSettings(){
   if(c.provider==="gemini" && c.key && !c.gemModel) loadModelList();
 }
 function setMsg(m, k){ const a=$("setMsg"); if(!m){a.hidden=true;return;} a.hidden=false; a.className="alert"+(k?" "+k:""); a.textContent=m; }
-function readForm(){ return {provider:$("provider").value, key:$("apiKey").value.trim(), gemModel:$("gemModel").value, baseUrl:$("baseUrl").value.trim(), oaModel:$("oaModel").value.trim(), dialect:$("dialect").value,
+function readForm(){ return {provider:$("provider").value, key:$("apiKey").value.replace(/\s+/g,""), gemModel:$("gemModel").value, baseUrl:$("baseUrl").value.trim(), oaModel:$("oaModel").value.trim(), dialect:$("dialect").value,
   voice:{es:$("voice_es").value, en:$("voice_en").value}, rate:+$("rate").value||1}; }
 $("provider").onchange = syncProviderFields;
 $("setBtn").onclick = openSettings;
@@ -735,7 +735,7 @@ function loadModelList(){
   return loadingModels;
 }
 async function doLoadModels(){
-  const key = $("apiKey").value.trim();
+  const key = $("apiKey").value.replace(/\s+/g,"");
   if(!key){ modelMsg("Paste your API key above first.","err"); return; }
   $("loadModels").disabled = true; $("loadModels").textContent = "Loading…"; modelMsg("Loading models…");
   try{
@@ -749,6 +749,22 @@ async function doLoadModels(){
 }
 $("loadModels").onclick = loadModelList;
 // load automatically once a key is pasted
+$("showKey").onclick = () => {
+  const masked = $("apiKey").classList.toggle("masked");
+  $("showKey").textContent = masked ? "Show" : "Hide"; $("showKey").setAttribute("aria-pressed", String(!masked));
+};
+$("pasteKey").onclick = async () => {
+  try{
+    if(!navigator.clipboard || !navigator.clipboard.readText) throw new Error("no clipboard");
+    const t = (await navigator.clipboard.readText()).trim();
+    if(!t){ modelMsg("Your clipboard is empty. Copy the key from Google AI Studio first.", "err"); return; }
+    $("apiKey").value = t.replace(/\s+/g, "");
+    $("apiKey").dispatchEvent(new Event("input"));
+  }catch(_){
+    modelMsg("This browser didn't allow reading the clipboard. Long-press inside the key box and choose Paste instead.", "err");
+    $("apiKey").focus();
+  }
+};
 let keyTimer = 0, lastLoadedKey = "";
 $("apiKey").addEventListener("input", () => {
   clearTimeout(keyTimer);
